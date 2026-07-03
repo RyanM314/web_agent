@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vermax — AI Agentic RAG Assistant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:{50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a'},accent:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d'}}}}}</script>
+<style>
+/* ── CSS Variables for Theming ─────────────────────────────────────────── */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: rgba(255,255,255,0.03);
+  --bg-card: rgba(255,255,255,0.04);
+  --text-primary: #e4e4e7;
+  --text-secondary: rgba(228,228,231,0.5);
+  --text-muted: rgba(228,228,231,0.35);
+  --border-color: rgba(255,255,255,0.06);
+  --border-hover: rgba(59,130,246,0.2);
+  --glow-primary: rgba(59,130,246,0.12);
+  --glow-accent: rgba(34,197,94,0.08);
+  --input-bg: rgba(255,255,255,0.04);
+  --input-border: rgba(255,255,255,0.1);
+  --glass-bg: rgba(255,255,255,0.03);
+  --glass-border: rgba(255,255,255,0.06);
+  --code-bg: rgba(0,0,0,0.3);
+  --diff-add-bg: rgba(34,197,94,0.12);
+  --diff-add-border: rgba(34,197,94,0.25);
+  --diff-add-text: rgba(34,197,94,0.95);
+  --diff-remove-bg: rgba(239,68,68,0.12);
+  --diff-remove-border: rgba(239,68,68,0.25);
+  --diff-remove-text: rgba(239,68,68,0.95);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: rgba(0,0,0,0.02);
+  --bg-card: rgba(255,255,255,0.8);
+  --text-primary: #1e293b;
+  --text-secondary: rgba(30,41,59,0.6);
+  --text-muted: rgba(30,41,59,0.35);
+  --border-color: rgba(0,0,0,0.08);
+  --border-hover: rgba(59,130,246,0.25);
+  --glow-primary: rgba(59,130,246,0.06);
+  --glow-accent: rgba(34,197,94,0.04);
+  --input-bg: rgba(255,255,255,0.9);
+  --input-border: rgba(0,0,0,0.12);
+  --glass-bg: rgba(255,255,255,0.85);
+  --glass-border: rgba(0,0,0,0.06);
+  --code-bg: rgba(0,0,0,0.05);
+  --diff-add-bg: rgba(34,197,94,0.1);
+  --diff-add-border: rgba(34,197,94,0.2);
+  --diff-add-text: #15803d;
+  --diff-remove-bg: rgba(239,68,68,0.1);
+  --diff-remove-border: rgba(239,68,68,0.2);
+  --diff-remove-text: #dc2626;
+}
+
+/* ── Base Reset & Typography ───────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow-x:hidden;transition:background 0.3s ease,color 0.3s ease}
+
+/* ── Animated Background ───────────────────────────────────────────────── */
+.bg-grid{background-image:radial-gradient(rgba(59,130,246,0.08) 1px,transparent 1px);background-size:40px 40px}
+[data-theme="light"] .bg-grid{background-image:radial-gradient(rgba(59,130,246,0.04) 1px,transparent 1px)}
+.bg-glow{position:fixed;top:-40%;left:-20%;width:80%;height:80%;background:radial-gradient(ellipse at center,var(--glow-primary) 0%,transparent 70%);pointer-events:none;z-index:0;animation:glowPulse 8s ease-in-out infinite alternate;transition:background 0.3s ease}
+.bg-glow-2{position:fixed;bottom:-30%;right:-20%;width:70%;height:70%;background:radial-gradient(ellipse at center,var(--glow-accent) 0%,transparent 70%);pointer-events:none;z-index:0;animation:glowPulse2 10s ease-in-out infinite alternate;transition:background 0.3s ease}
+@keyframes glowPulse{0%{opacity:0.5;transform:scale(1)}100%{opacity:1;transform:scale(1.15)}}
+@keyframes glowPulse2{0%{opacity:0.3;transform:scale(1)}100%{opacity:0.8;transform:scale(1.2)}}
+
+/* ── Floating Particles ────────────────────────────────────────────────── */
+.particle{position:fixed;border-radius:50%;pointer-events:none;z-index:0;opacity:0.15;transition:background 0.3s ease}
+@keyframes float1{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(-30px) translateX(15px)}50%{transform:translateY(-10px) translateX(-10px)}75%{transform:translateY(-40px) translateX(20px)}}
+@keyframes float2{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(20px) translateX(-15px)}50%{transform:translateY(-20px) translateX(10px)}75%{transform:translateY(10px) translateX(-20px)}}
+
+/* ── Glassmorphism ─────────────────────────────────────────────────────── */
+.glass{border:1px solid var(--glass-border);background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:all 0.3s ease}
+.glass-hover:hover{border-color:var(--border-hover);background:rgba(59,130,246,0.06);box-shadow:0 0 30px rgba(59,130,246,0.05)}
+.glass-card{background:var(--bg-card);border:1px solid var(--border-color);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+.glass-card:hover{border-color:var(--border-hover);background:rgba(59,130,246,0.04);box-shadow:0 8px 40px rgba(59,130,246,0.06);transform:translateY(-2px)}
+.glass-input{background:var(--input-bg);border:1px solid var(--input-border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--text-primary);transition:all 0.3s ease}
+.glass-input:focus{border-color:rgba(59,130,246,0.4);background:rgba(255,255,255,0.06);box-shadow:0 0 20px rgba(59,130,246,0.08);outline:none}
+.glass-input::placeholder{color:var(--text-muted)}
+[data-theme="light"] .glass-input:focus{background:white}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn-primary{background:linear-gradient(135deg,rgba(59,130,246,0.9),rgba(37,99,235,0.9));border:1px solid rgba(59,130,246,0.2);color:white;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);cursor:pointer;position:relative;overflow:hidden}
+.btn-primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:left 0.5s}
+.btn-primary:hover::before{left:100%}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4)}
+.btn-primary:active{transform:translateY(0);box-shadow:0 2px 10px rgba(59,130,246,0.15)}
+.btn-primary:disabled{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.06);color:rgba(255,255,255,0.25);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-primary:disabled::before{display:none}
+
+.btn-accent{background:linear-gradient(135deg,rgba(34,197,94,0.9),rgba(22,163,74,0.9));border:1px solid rgba(34,197,94,0.2);color:white;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);cursor:pointer;position:relative;overflow:hidden}
+.btn-accent::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:left 0.5s}
+.btn-accent:hover::before{left:100%}
+.btn-accent:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4)}
+.btn-accent:active{transform:translateY(0)}
+
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.12);color:var(--text-secondary);transition:all 0.3s ease;cursor:pointer}
+.btn-outline:hover{border-color:rgba(59,130,246,0.3);background:rgba(59,130,246,0.06);color:white}
+[data-theme="light"] .btn-outline{border-color:rgba(0,0,0,0.15);color:rgba(30,41,59,0.6)}
+[data-theme="light"] .btn-outline:hover{border-color:rgba(59,130,246,0.3);color:#1e293b}
+
+.btn-ghost{background:transparent;border:none;color:var(--text-secondary);transition:all 0.2s ease;cursor:pointer}
+.btn-ghost:hover{color:var(--text-primary);background:rgba(255,255,255,0.05)}
+[data-theme="light"] .btn-ghost:hover{background:rgba(0,0,0,0.05)}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInScale{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes typing{0%{opacity:0.3}50%{opacity:1}100%{opacity:0.3}}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes borderGlow{0%,100%{border-color:var(--border-color)}50%{border-color:rgba(59,130,246,0.35)}}
+@keyframes ripple{to{transform:scale(4);opacity:0}}
+@keyframes progressPulse{0%,100%{opacity:0.6}50%{opacity:1}}
+@keyframes checkmark{0%{stroke-dashoffset:24}100%{stroke-dashoffset:0}}
+@keyframes typingCursor{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes gaugeFill{from{stroke-dasharray:0 339.292}} /* 2*PI*54 ≈ 339.292 */
+@keyframes glowSpread{0%{box-shadow:0 0 5px rgba(59,130,246,0.3)}50%{box-shadow:0 0 25px rgba(59,130,246,0.2)}100%{box-shadow:0 0 5px rgba(59,130,246,0.3)}}
+
+.animate-fade-in{animation:fadeIn 0.5s cubic-bezier(0.4,0,0.2,1) both}
+.animate-fade-in-up{animation:fadeInUp 0.6s cubic-bezier(0.4,0,0.2,1) both}
+.animate-fade-in-scale{animation:fadeInScale 0.4s cubic-bezier(0.4,0,0.2,1) both}
+.animate-slide-in{animation:slideIn 0.5s cubic-bezier(0.4,0,0.2,1) both}
+.animate-slide-in-right{animation:slideInRight 0.5s cubic-bezier(0.4,0,0.2,1) both}
+.animate-slide-up{animation:slideUp 0.6s cubic-bezier(0.4,0,0.2,1) both}
+.animate-shimmer{background:linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.08),rgba(255,255,255,0.03));background-size:200% 100%;animation:shimmer 2s infinite}
+.animate-border-glow{animation:borderGlow 2s ease-in-out infinite}
+
+.stagger-1{animation-delay:0.1s}
+.stagger-2{animation-delay:0.2s}
+.stagger-3{animation-delay:0.3s}
+.stagger-4{animation-delay:0.4s}
+.stagger-5{animation-delay:0.5s}
+.stagger-6{animation-delay:0.6s}
+.stagger-7{animation-delay:0.7s}
+
+/* ── Pipeline Visualization ────────────────────────────────────────────── */
+.pipeline-container{display:flex;align-items:center;justify-content:center;gap:0;padding:16px 8px;overflow-x:auto;scrollbar-width:thin}
+.pipeline-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;position:relative;z-index:1;min-width:72px;transition:all 0.5s cubic-bezier(0.4,0,0.2,1)}
+.pipeline-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;transition:all 0.5s cubic-bezier(0.4,0,0.2,1);background:var(--bg-card);border:1.5px solid var(--border-color);color:var(--text-secondary);position:relative}
+.pipeline-circle i{font-size:0.85rem;transition:all 0.4s}
+.pipeline-connector{width:48px;height:2px;background:var(--border-color);flex-shrink:0;position:relative;overflow:hidden;transition:background 0.5s}
+.pipeline-connector::after{content:'';position:absolute;left:-100%;top:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(59,130,246,0.4),transparent);animation:shimmer 3s infinite;transition:opacity 0.3s}
+.pipeline-connector.completed{background:rgba(59,130,246,0.3)}
+.pipeline-connector.completed::after{opacity:0;animation:none}
+.pipeline-connector.active{background:rgba(59,130,246,0.4)}
+.pipeline-connector.active::after{animation:shimmer 1.5s infinite;opacity:1}
+.pipeline-step .step-label{font-size:0.6rem;font-weight:500;text-align:center;color:var(--text-secondary);transition:color 0.4s;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+.pipeline-step.active .pipeline-circle{background:linear-gradient(135deg,rgba(59,130,246,0.9),rgba(37,99,235,0.9));border-color:rgba(59,130,246,0.4);color:white;box-shadow:0 0 20px rgba(59,130,246,0.2);animation:glowSpread 2s ease-in-out infinite}
+.pipeline-step.active .step-label{color:rgba(59,130,246,0.9);font-weight:600}
+.pipeline-step.completed .pipeline-circle{background:linear-gradient(135deg,rgba(34,197,94,0.9),rgba(22,163,74,0.9));border-color:rgba(34,197,94,0.3);color:white;box-shadow:0 0 20px rgba(34,197,94,0.1)}
+.pipeline-step.completed .step-label{color:rgba(34,197,94,0.8)}
+.pipeline-step.failed .pipeline-circle{background:linear-gradient(135deg,rgba(239,68,68,0.9),rgba(220,38,38,0.9));border-color:rgba(239,68,68,0.3);color:white;box-shadow:0 0 20px rgba(239,68,68,0.1)}
+.pipeline-step .pipeline-duration{font-size:0.55rem;color:var(--text-muted);opacity:0;transition:opacity 0.4s;margin-top:2px}
+.pipeline-step.completed .pipeline-duration,.pipeline-step.active .pipeline-duration{opacity:1}
+
+/* ── Drop Zone ─────────────────────────────────────────────────────────── */
+.drop-zone{border:1.5px dashed var(--border-color);border-radius:16px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
+.drop-zone::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(59,130,246,0.03),rgba(34,197,94,0.03));opacity:0;transition:opacity 0.4s}
+.drop-zone:hover::before{opacity:1}
+.drop-zone:hover{border-color:rgba(59,130,246,0.3);transform:translateY(-2px);box-shadow:0 8px 40px rgba(59,130,246,0.04)}
+.drop-zone-active{border-color:rgba(59,130,246,0.5)!important;background:rgba(59,130,246,0.06)!important;transform:translateY(-2px);box-shadow:0 0 30px rgba(59,130,246,0.1)!important}
+.drop-zone.drag-over .drop-icon{transform:scale(1.2);color:rgba(59,130,246,0.8)}
+
+/* ── Message Bubbles ───────────────────────────────────────────────────── */
+.message-bubble{max-width:85%;padding:16px 20px;border-radius:18px;animation:slideUp 0.4s cubic-bezier(0.4,0,0.2,1) both;line-height:1.6;font-size:0.95rem;position:relative}
+.message-bubble.user{background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.1));border:1px solid rgba(59,130,246,0.12);border-bottom-right-radius:6px;margin-left:auto}
+.message-bubble.user::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.1));border-right:1px solid rgba(59,130,246,0.12);border-bottom:1px solid rgba(59,130,246,0.12);border-radius:0 0 4px 0;transform:rotate(-45deg)}
+.message-bubble.assistant{background:var(--bg-card);border:1px solid var(--border-color);border-bottom-left-radius:6px;margin-right:auto}
+.message-bubble.assistant::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:var(--bg-card);border-left:1px solid var(--border-color);border-bottom:1px solid var(--border-color);border-radius:0 0 0 4px;transform:rotate(45deg)}
+
+/* ── Typing / Streaming Effect ─────────────────────────────────────────── */
+.typing-cursor{display:inline-block;width:2px;height:1em;background:rgba(59,130,246,0.7);margin-left:2px;animation:typingCursor 0.8s step-end infinite;vertical-align:text-bottom}
+.streaming-text{animation:slideUp 0.3s ease both}
+@keyframes charReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.char-reveal{display:inline;animation:charReveal 0.15s ease both}
+
+/* ── Word-Level Diff ───────────────────────────────────────────────────── */
+.diff-word{display:inline;padding:1px 2px;border-radius:3px;transition:all 0.3s}
+.diff-word.added{background:var(--diff-add-bg);border-bottom:1.5px solid var(--diff-add-border);color:var(--diff-add-text)}
+.diff-word.removed{background:var(--diff-remove-bg);border-bottom:1.5px solid var(--diff-remove-border);color:var(--diff-remove-text);text-decoration:line-through}
+.diff-line{display:flex;gap:8px;padding:2px 0;font-size:0.85rem;line-height:1.6;transition:background 0.2s}
+.diff-line:hover{background:rgba(255,255,255,0.02)}
+.diff-line-number{width:32px;text-align:right;color:var(--text-muted);font-size:0.7rem;flex-shrink:0;font-family:'Courier New',monospace;user-select:none}
+.diff-line-content{flex:1;white-space:pre-wrap;word-break:break-word}
+.diff-header{display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:8px;margin-bottom:4px;font-size:0.75rem;font-weight:600}
+.diff-header.added{background:var(--diff-add-bg);color:var(--diff-add-text)}
+.diff-header.removed{background:var(--diff-remove-bg);color:var(--diff-remove-text)}
+.diff-stats{display:flex;gap:12px;font-size:0.75rem;padding:4px 0 8px 0;flex-wrap:wrap}
+.diff-stat{display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;font-weight:500}
+.diff-stat.added{color:var(--diff-add-text);background:var(--diff-add-bg)}
+.diff-stat.removed{color:var(--diff-remove-text);background:var(--diff-remove-bg)}
+.diff-stat.neutral{color:var(--text-secondary);background:var(--bg-card)}
+
+/* ── Research Source Cards ─────────────────────────────────────────────── */
+.source-card{border:1px solid var(--border-color);border-radius:12px;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);overflow:hidden;cursor:pointer}
+.source-card:hover{border-color:var(--border-hover);background:rgba(59,130,246,0.02);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.06)}
+.source-card.expanded{background:rgba(59,130,246,0.03);border-color:rgba(59,130,246,0.15)}
+.source-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.source-card-body{max-height:0;overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),padding 0.4s ease;padding:0 14px}
+.source-card.expanded .source-card-body{max-height:300px;padding:0 14px 14px 14px;overflow-y:auto}
+.source-badge{font-size:0.6rem;font-weight:600;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.source-badge.edu{background:rgba(59,130,246,0.12);color:rgba(59,130,246,0.85)}
+.source-badge.arxiv{background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.85)}
+.source-badge.wikipedia{background:rgba(245,158,11,0.12);color:rgba(245,158,11,0.85)}
+.source-badge.academic{background:rgba(34,197,94,0.12);color:rgba(34,197,94,0.85)}
+.source-badge.generic{background:var(--bg-card);color:var(--text-secondary)}
+
+/* ── Quality Score Gauge ───────────────────────────────────────────────── */
+.gauge-container{width:100px;height:100px;position:relative;flex-shrink:0}
+.gauge-bg{fill:none;stroke:var(--border-color);stroke-width:6}
+.gauge-fill{fill:none;stroke:url(#gaugeGradient);stroke-width:6;stroke-linecap:round;transition:stroke-dasharray 1.5s cubic-bezier(0.4,0,0.2,1);animation:gaugeFill 1.5s ease forwards}
+.gauge-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-value{font-size:1.3rem;font-weight:800;line-height:1;background:linear-gradient(135deg,#60a5fa,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gauge-label{font-size:0.55rem;color:var(--text-secondary);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
+
+/* ── Performance Metrics ───────────────────────────────────────────────── */
+.metric-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:0.7rem;font-weight:500;transition:all 0.3s;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary)}
+.metric-badge:hover{background:rgba(59,130,246,0.04);border-color:var(--border-hover);color:var(--text-primary)}
+.metric-badge i{font-size:0.65rem}
+
+/* ── Progress Bar ──────────────────────────────────────────────────────── */
+.progress-bar{height:2px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;position:relative}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,rgba(59,130,246,0.6),rgba(34,197,94,0.6));border-radius:2px;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);position:relative}
+.progress-bar-fill::after{content:'';position:absolute;right:0;top:0;width:20px;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));animation:shimmer 2s infinite}
+
+/* ── File Uploaded Badge ───────────────────────────────────────────────── */
+.file-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-size:0.8rem;transition:all 0.3s ease;border:1px solid rgba(34,197,94,0.12);background:rgba(34,197,94,0.04);color:rgba(34,197,94,0.8)}
+.file-badge:hover{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.2)}
+
+/* ── Select ────────────────────────────────────────────────────────────── */
+select.glass-input{padding:6px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(228,228,231,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+[data-theme="light"] select.glass-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+.scroll-custom{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent}
+.scroll-custom::-webkit-scrollbar{width:5px}
+.scroll-custom::-webkit-scrollbar-track{background:transparent}
+.scroll-custom::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:10px}
+.scroll-custom::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.15)}
+[data-theme="light"] .scroll-custom{scrollbar-color:rgba(0,0,0,0.1) transparent}
+[data-theme="light"] .scroll-custom::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.08)}
+[data-theme="light"] .scroll-custom::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.15)}
+
+/* ── Steps Progress ────────────────────────────────────────────────────── */
+.step-item{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;cursor:pointer;transition:all 0.3s}
+.step-item:hover .step-circle{transform:scale(1.1)}
+.step-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary)}
+.step-line{width:80px;height:2px;background:var(--border-color);margin-bottom:24px;position:relative;overflow:hidden}
+.step-line::after{content:'';position:absolute;left:-100%;top:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(59,130,246,0.4),transparent);animation:shimmer 3s infinite}
+.step-item.active .step-circle{background:linear-gradient(135deg,rgba(59,130,246,0.9),rgba(37,99,235,0.9));border-color:rgba(59,130,246,0.4);color:white;box-shadow:0 0 20px rgba(59,130,246,0.15)}
+.step-item.active .step-label{color:rgba(59,130,246,0.9)}
+.step-item.completed .step-circle{background:linear-gradient(135deg,rgba(34,197,94,0.9),rgba(22,163,74,0.9));border-color:rgba(34,197,94,0.3);color:white;box-shadow:0 0 20px rgba(34,197,94,0.1)}
+
+/* ── Comparison Panel ──────────────────────────────────────────────────── */
+.comparison-panel{max-height:600px;overflow-y:auto}
+.comparison-card{transition:all 0.3s cubic-bezier(0.4,0,0.2,1);animation:slideUp 0.5s both}
+.comparison-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.2)}
+
+/* ── Presenter Mode ──────────────────────────────────────────────────── */
+.presenter-mode #chatInterface,.presenter-mode #welcomeArea,.presenter-mode #pipelineSection,.presenter-mode #stepProgress{display:none!important}
+.presenter-mode #outputSection{max-width:100%!important;padding:0!important;margin:0!important}
+.presenter-mode header{opacity:0;pointer-events:none}
+.presenter-mode .bg-glow,.presenter-mode .bg-glow-2,.presenter-mode .particle{opacity:0}
+.presenter-mode footer{display:none}
+.presenter-mode .glass-card{background:transparent;border:none;backdrop-filter:none}
+.presenter-mode{background:var(--bg-primary)!important}
+.presenter-btn{position:fixed;bottom:80px;right:24px;z-index:9999;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.2);color:white;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(20px)}
+.presenter-btn:hover{background:rgba(59,130,246,0.25);transform:scale(1.1);box-shadow:0 0 20px rgba(59,130,246,0.15)}
+.presenter-btn i{font-size:1rem}
+[data-theme="light"] .presenter-btn{background:rgba(59,130,246,0.1);color:#1e293b}
+
+/* ── Session Timeline ──────────────────────────────────────────────────── */
+.timeline-item{position:relative;padding:12px 0 12px 32px;border-left:2px solid var(--border-color);margin-left:12px;transition:all 0.3s}
+.timeline-item:last-child{border-left-color:transparent}
+.timeline-item::before{content:'';position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border-color);transition:all 0.3s}
+.timeline-item.active::before{background:rgba(59,130,246,0.9);border-color:rgba(59,130,246,0.4);box-shadow:0 0 10px rgba(59,130,246,0.2)}
+.timeline-item.completed::before{background:rgba(34,197,94,0.9);border-color:rgba(34,197,94,0.3);box-shadow:0 0 10px rgba(34,197,94,0.1)}
+.timeline-item:hover{background:rgba(255,255,255,0.02);border-radius:8px}
+.timeline-item .timeline-body{max-height:0;overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1)}
+.timeline-item.expanded .timeline-body{max-height:400px;overflow-y:auto}
+
+/* ── Confidence Score Heatmap ──────────────────────────────────────────── */
+.confidence-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:all 0.3s}
+.confidence-dot.high{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.3)}
+.confidence-dot.medium{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,0.3)}
+.confidence-dot.low{background:#f43f5e;box-shadow:0 0 6px rgba(244,63,94,0.3)}
+.confidence-bar{height:4px;border-radius:2px;flex:1;min-width:40px}
+.confidence-bar.high{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.confidence-bar.medium{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.confidence-bar.low{background:linear-gradient(90deg,#f43f5e,#e11d48)}
+
+/* ── Copy Button ───────────────────────────────────────────────────────── */
+.copy-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:0.7rem;font-weight:500;transition:all 0.3s;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);cursor:pointer}
+.copy-btn:hover{background:rgba(59,130,246,0.04);border-color:var(--border-hover);color:var(--text-primary)}
+.copy-btn.copied{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);color:rgba(34,197,94,0.8)}
+
+/* ── Export Buttons ────────────────────────────────────────────────────── */
+.export-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;font-size:0.8rem;font-weight:500;transition:all 0.3s ease;border:1px solid transparent;cursor:pointer}
+.export-btn.pdf{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.15);color:rgba(239,68,68,0.8)}
+.export-btn.pdf:hover{background:rgba(239,68,68,0.15);transform:translateY(-1px);box-shadow:0 4px 15px rgba(239,68,68,0.1)}
+.export-btn.docx{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.15);color:rgba(59,130,246,0.8)}
+.export-btn.docx:hover{background:rgba(59,130,246,0.15);transform:translateY(-1px);box-shadow:0 4px 15px rgba(59,130,246,0.1)}
+
+/* ── Notes Output ──────────────────────────────────────────────────────── */
+.notes-output h1{font-size:1.6rem;font-weight:700;margin-top:1.5rem;margin-bottom:0.75rem;background:linear-gradient(135deg,var(--text-primary),rgba(161,161,170,0.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-bottom:1px solid var(--border-color);padding-bottom:0.4rem}
+.notes-output h2{font-size:1.3rem;font-weight:600;margin-top:1.25rem;margin-bottom:0.6rem;color:var(--text-primary)}
+.notes-output h3{font-size:1.1rem;font-weight:600;margin-top:1rem;margin-bottom:0.5rem;color:var(--text-primary)}
+.notes-output p{margin-bottom:0.75rem;line-height:1.7;color:var(--text-secondary)}
+.notes-output ul,.notes-output ol{margin-left:1.5rem;margin-bottom:0.75rem}
+.notes-output li{margin-bottom:0.25rem;line-height:1.6;color:var(--text-secondary)}
+.notes-output ul{list-style-type:disc}
+.notes-output ol{list-style-type:decimal}
+.notes-output code{background:rgba(255,255,255,0.06);padding:0.15rem 0.4rem;border-radius:4px;font-size:0.875rem;color:rgba(251,191,36,0.9)}
+.notes-output pre{background:var(--code-bg);border:1px solid var(--border-color);padding:1rem;border-radius:12px;overflow-x:auto;margin-bottom:1rem;font-size:0.875rem;line-height:1.5}
+.notes-output pre code{background:transparent;color:inherit;padding:0;font-size:inherit}
+.notes-output blockquote{border-left:3px solid rgba(59,130,246,0.4);padding-left:1rem;font-style:italic;margin-bottom:0.75rem;color:var(--text-secondary)}
+.notes-output hr{border:none;border-top:1px solid var(--border-color);margin:1.5rem 0}
+.notes-output strong{font-weight:700}
+.notes-output a{color:rgba(59,130,246,0.8);text-decoration:none;transition:color 0.2s}
+.notes-output a:hover{color:rgba(59,130,246,1);text-decoration:underline}
+[data-theme="light"] .notes-output code{background:rgba(0,0,0,0.05);color:#b45309}
+[data-theme="light"] .notes-output pre{background:rgba(0,0,0,0.03)}
+
+/* ── Notification Toast ────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 20px;border-radius:14px;font-size:0.85rem;font-weight:500;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid;animation:slideUp 0.4s cubic-bezier(0.4,0,0.2,1),fadeIn 0.3s;max-width:400px;pointer-events:none;transition:all 0.3s}
+.toast.success{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.15);color:rgba(34,197,94,0.9)}
+.toast.error{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.15);color:rgba(239,68,68,0.9)}
+.toast.info{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.15);color:rgba(59,130,246,0.9)}
+
+/* ── Ripple Effect ─────────────────────────────────────────────────────── */
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.15);transform:scale(0);animation:ripple 0.6s linear;pointer-events:none}
+
+/* ── Misc ──────────────────────────────────────────────────────────────── */
+.shimmer-text{background:linear-gradient(90deg,rgba(228,228,231,0.3),rgba(228,228,231,0.6),rgba(228,228,231,0.3));background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s infinite}
+.gradient-text{background:linear-gradient(135deg,#60a5fa,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hover-lift{transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s ease}
+.hover-lift:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.15)}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media(max-width:640px){
+.message-bubble{max-width:92%}
+.step-line{width:40px}
+.toast{left:16px;right:16px;bottom:16px;max-width:none}
+.pipeline-container{gap:0;padding:12px 4px}
+.pipeline-step{min-width:56px}
+.pipeline-circle{width:30px;height:30px;font-size:0.65rem}
+.pipeline-connector{width:24px}
+}
+</style>
+</head>
+<body class="bg-grid min-h-screen font-sans antialiased relative" data-theme="dark">
+<div class="bg-glow"></div>
+<div class="bg-glow-2"></div>
+
+<!-- Floating Particles -->
+<div class="particle" style="width:300px;height:300px;background:radial-gradient(circle,rgba(59,130,246,0.08),transparent);top:10%;left:5%;animation:float1 20s ease-in-out infinite;"></div>
+<div class="particle" style="width:200px;height:200px;background:radial-gradient(circle,rgba(34,197,94,0.06),transparent);bottom:20%;right:10%;animation:float2 15s ease-in-out infinite;"></div>
+<div class="particle" style="width:150px;height:150px;background:radial-gradient(circle,rgba(147,51,234,0.05),transparent);top:40%;right:30%;animation:float1 25s ease-in-out infinite;"></div>
+<div class="particle" style="width:250px;height:250px;background:radial-gradient(circle,rgba(59,130,246,0.04),transparent);bottom:10%;left:20%;animation:float2 18s ease-in-out infinite;"></div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
+<!-- Header -->
+<header class="glass sticky top-3 z-50 mx-4 sm:mx-6 lg:mx-8 max-w-7xl lg:mx-auto rounded-2xl animate-fade-in">
+<div class="px-4 sm:px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/15 flex-shrink-0">
+<i class="fas fa-brain text-white text-lg"></i>
+</div>
+<div>
+<a href="#" class="text-lg font-bold text-white hover:text-primary-300 transition-colors tracking-tight" style="color:var(--text-primary)">Vermax</a>
+<p class="text-xs" style="color:var(--text-secondary)">AI Agentic RAG Assistant</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span id="healthBadge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass">
+<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> Checking...
+</span>
+<button onclick="toggleTheme()" class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" title="Toggle theme" id="themeToggle">
+<i class="fas fa-moon text-sm" id="themeIcon"></i>
+</button>
+<a href="https://github.com/RyanM314/web_agent.git" target="_blank" rel="noopener noreferrer" class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" style="color:var(--text-secondary)" title="GitHub">
+<i class="fab fa-github text-lg"></i>
+</a>
+</div>
+</div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+
+<!-- Pipeline Visualization -->
+<div id="pipelineSection" class="hidden glass-card rounded-2xl p-4 mb-6 animate-fade-in">
+<div class="flex items-center justify-between mb-3 px-2">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-primary-500/10 border border-primary-500/10 flex items-center justify-center">
+<i class="fas fa-diagram-project text-xs text-primary-400"></i>
+</span>
+<span class="text-sm font-semibold" style="color:var(--text-primary)">Agentic Pipeline</span>
+</div>
+<span id="pipelineTime" class="text-xs" style="color:var(--text-secondary)">0.0s elapsed</span>
+</div>
+<div id="pipelineContainer" class="pipeline-container">
+<!-- Steps will be rendered by JS -->
+</div>
+</div>
+
+<!-- Steps Progress -->
+<div id="stepProgress" class="hidden sm:flex items-center justify-center gap-0 mb-10 animate-fade-in">
+<div class="step-item active" data-step="1">
+<div class="step-circle">1</div>
+<span class="step-label text-xs font-medium" style="color:var(--text-secondary)">Upload</span>
+</div>
+<div class="step-line"></div>
+<div class="step-item" data-step="2">
+<div class="step-circle">2</div>
+<span class="step-label text-xs font-medium" style="color:var(--text-secondary)">Request</span>
+</div>
+<div class="step-line"></div>
+<div class="step-item" data-step="3">
+<div class="step-circle">3</div>
+<span class="step-label text-xs font-medium" style="color:var(--text-secondary)">Process</span>
+</div>
+<div class="step-line"></div>
+<div class="step-item" data-step="4">
+<div class="step-circle"><i class="fas fa-download text-xs"></i></div>
+<span class="step-label text-xs font-medium" style="color:var(--text-secondary)">Export</span>
+</div>
+</div>
+
+<!-- Welcome / Chat Area -->
+<div id="welcomeArea" class="flex flex-col items-center justify-center py-20 px-4 animate-fade-in">
+<div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-400/20 to-accent-400/20 border border-primary-500/10 flex items-center justify-center mb-6 hover-lift cursor-pointer" onclick="document.getElementById('fileInput').click()">
+<i class="fas fa-robot text-4xl text-primary-400"></i>
+</div>
+<h1 class="text-3xl sm:text-4xl font-bold text-center mb-3 gradient-text">How can I help you today?</h1>
+<p style="color:var(--text-secondary)" class="text-center max-w-md mb-8">Upload your lecture notes and describe what updates you'd like to make. I'll research, compare, and generate updated content.</p>
+<div class="flex flex-wrap gap-3 justify-center">
+<button onclick="document.getElementById('fileInput').click()" class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium">
+<i class="fas fa-cloud-upload-alt"></i> Upload Notes
+</button>
+<button onclick="document.getElementById('promptInput').focus()" class="btn-outline inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium">
+<i class="fas fa-pen"></i> Write Request
+</button>
+</div>
+</div>
+
+<!-- Main Chat Interface -->
+<div id="chatInterface" class="hidden space-y-6">
+<!-- Upload Section (collapsible) -->
+<div id="uploadSection" class="glass-card rounded-2xl p-6 animate-fade-in-up stagger-1">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-primary-500/10 border border-primary-500/10 flex items-center justify-center">
+<i class="fas fa-cloud-upload-alt text-primary-400 text-sm"></i>
+</span>
+<div>
+<h2 class="text-sm font-semibold" style="color:var(--text-primary)">Lecture Notes</h2>
+<p class="text-xs" style="color:var(--text-secondary)">Upload a document to get started</p>
+</div>
+</div>
+<span class="text-[10px] uppercase tracking-wider text-primary-400 font-semibold bg-primary-500/10 px-2.5 py-1 rounded-full border border-primary-500/10">Step 1</span>
+</div>
+<div id="dropZone" class="drop-zone">
+<input type="file" id="fileInput" accept=".txt,.pdf,.docx" class="hidden" title="Upload a lecture notes file (TXT, PDF, or DOCX)" />
+<div id="dropContent" class="flex flex-col items-center gap-3 relative z-10">
+<div class="w-14 h-14 rounded-full bg-primary-500/10 border border-primary-500/10 flex items-center justify-center drop-icon transition-transform duration-300">
+<i class="fas fa-cloud-upload-alt text-2xl text-primary-400"></i>
+</div>
+<div>
+<p class="text-sm font-medium" style="color:var(--text-secondary)"><span class="text-primary-400 hover:text-primary-300 transition-colors cursor-pointer">Click to upload</span> or drag and drop</p>
+<p class="text-xs mt-1" style="color:var(--text-muted)">TXT, PDF, or DOCX <span class="mx-1.5">•</span> max 50 MB</p>
+</div>
+</div>
+<div id="uploadedFile" class="hidden items-center gap-3 p-3 file-badge w-full relative z-10">
+<div class="w-10 h-10 rounded-lg bg-accent-500/10 flex items-center justify-center flex-shrink-0">
+<i class="fas fa-file-alt text-accent-400 text-lg"></i>
+</div>
+<div class="flex-1 min-w-0">
+<p id="uploadedFilename" class="text-sm font-medium text-accent-300 truncate"></p>
+<p id="uploadedDocId" class="text-xs text-accent-500/70 font-mono"></p>
+</div>
+<button onclick="resetUpload()" class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 hover:text-red-400" title="Remove file">
+<i class="fas fa-times text-sm"></i>
+</button>
+</div>
+</div>
+<div id="uploadProgress" class="hidden mt-4 glass rounded-xl p-4">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center">
+<i class="fas fa-spinner spinner text-primary-400 text-sm" style="animation:spin 0.8s linear infinite"></i>
+</div>
+<div>
+<p class="text-sm font-medium" style="color:var(--text-primary)">Processing upload...</p>
+<p class="text-xs" style="color:var(--text-secondary)">Parsing, chunking, and indexing your document</p>
+</div>
+</div>
+<div class="progress-bar">
+<div class="progress-bar-fill" style="width:60%"></div>
+</div>
+</div>
+</div>
+
+<!-- Prompt Section -->
+<div id="promptSection" class="glass-card rounded-2xl p-6 animate-fade-in-up stagger-2">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg bg-primary-500/10 border border-primary-500/10 flex items-center justify-center">
+<i class="fas fa-message text-primary-400 text-sm"></i>
+</span>
+<div>
+<h2 class="text-sm font-semibold" style="color:var(--text-primary)">Update Request</h2>
+<p class="text-xs" style="color:var(--text-secondary)">Describe what you'd like to update</p>
+</div>
+</div>
+<span class="text-[10px] uppercase tracking-wider text-primary-400 font-semibold bg-primary-500/10 px-2.5 py-1 rounded-full border border-primary-500/10">Step 2</span>
+</div>
+<div class="relative">
+<textarea id="promptInput" rows="4" class="w-full glass-input rounded-xl p-4 pr-12 text-sm resize-y transition-shadow placeholder:text-slate-600 min-h-[100px]" placeholder="Describe what you want to update...&#10;&#10;Example: Update the section on neural network backpropagation to include the newer AdamW optimiser and dropout regularisation."></textarea>
+<button id="sendPromptBtn" onclick="runAgenticRag()" disabled class="absolute bottom-4 right-4 w-9 h-9 rounded-lg btn-primary flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed" title="Send (Ctrl+Enter)">
+<i class="fas fa-arrow-up text-sm"></i>
+</button>
+</div>
+<div class="flex items-center gap-3 mt-3">
+<div class="flex items-center gap-2">
+<label class="text-xs font-medium flex items-center gap-1.5" style="color:var(--text-secondary)"><i class="fas fa-layer-group text-xs"></i> Top-K:</label>
+<select id="topKSelect" title="Number of top-K chunks to retrieve" class="glass-input text-xs rounded-lg px-3 py-1.5">
+<option value="3">3</option>
+<option value="5" selected>5</option>
+<option value="8">8</option>
+<option value="10">10</option>
+</select>
+</div>
+<div class="flex-1"></div>
+<span id="charCount" class="text-xs" style="color:var(--text-muted)">0 / 10,000</span>
+</div>
+</div>
+
+<!-- Process & Status Section -->
+<div id="processSection" class="glass-card rounded-2xl p-6 animate-fade-in-up stagger-3">
+<div class="flex items-center gap-3">
+<button id="processBtn" onclick="runAgenticRag()" disabled class="btn-primary inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-semibold">
+<i id="btnIcon" class="fas fa-wand-magic-sparkles"></i>
+<span id="btnText">Run Agentic Update</span>
+</button>
+<div class="flex flex-wrap items-center gap-3 text-xs" style="color:var(--text-secondary)">
+<span id="statusDocId" class="hidden flex items-center gap-1.5">
+<i class="fas fa-file text-primary-400 text-xs"></i><span class="font-mono" style="color:var(--text-secondary)">—</span>
+</span>
+<span id="statusSessionId" class="hidden flex items-center gap-1.5">
+<i class="fas fa-fingerprint text-accent-400 text-xs"></i><span class="font-mono" style="color:var(--text-secondary)">—</span>
+</span>
+<span id="statusIteration" class="hidden flex items-center gap-1.5">
+<i class="fas fa-rotate text-accent-400 text-xs"></i>Iteration: <span class="font-mono" style="color:var(--text-secondary)">1</span>
+</span>
+</div>
+</div>
+<div id="loadingBar" class="hidden mt-5 glass rounded-xl p-4 animate-fade-in">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center">
+<i class="fas fa-spinner text-primary-400 text-sm" style="animation:spin 0.8s linear infinite"></i>
+</div>
+<div>
+<p id="loadingText" class="text-sm font-medium" style="color:var(--text-primary)">Preparing pipeline...</p>
+<p id="loadingSubtext" class="text-xs" style="color:var(--text-secondary)">Initializing agentic RAG process</p>
+</div>
+</div>
+<div class="progress-bar">
+<div class="progress-bar-fill" style="width:15%"></div>
+</div>
+</div>
+<div id="errorAlert" class="hidden mt-4 p-4 rounded-xl text-sm glass border-red-500/20 text-red-400 animate-fade-in">
+<i class="fas fa-exclamation-triangle mr-2"></i><span id="errorText"></span>
+</div>
+<div id="quotaBanner" class="hidden mt-4 p-5 rounded-xl text-sm glass border-yellow-500/20 text-yellow-400 animate-fade-in">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+<i class="fas fa-exclamation-triangle text-yellow-400 text-sm"></i>
+</div>
+<div>
+<strong class="font-semibold text-yellow-300">Gemini API Quota Exhausted</strong>
+<p id="quotaMsg" class="mt-1 text-yellow-400/80"></p>
+<p id="quotaCountdown" class="mt-1 text-xs text-yellow-500/60"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Presenter Mode Button -->
+<button id="presenterBtn" class="presenter-btn hidden" onclick="togglePresenterMode()" title="Presenter Mode (Full Screen)" aria-label="Toggle presenter mode">
+  <i class="fas fa-desktop"></i>
+</button>
+
+<!-- Output / Results Section -->
+<div id="outputSection" class="hidden space-y-6">
+<!-- Result Message Banner -->
+<div id="resultMessage" class="glass rounded-xl p-4 text-sm flex items-start gap-3 animate-fade-in" style="color:rgba(59,130,246,0.9);border-color:rgba(59,130,246,0.1)">
+<i class="fas fa-circle-check mt-0.5" style="color:rgba(59,130,246,0.9)"></i>
+<span></span>
+<button class="ml-auto btn-ghost w-6 h-6 rounded flex items-center justify-center flex-shrink-0" onclick="this.parentElement.remove()" title="Dismiss message" aria-label="Dismiss message">
+<i class="fas fa-times text-xs"></i>
+</button>
+</div>
+
+<!-- Pipeline Summary + Metrics -->
+<div id="pipelineSummary" class="hidden glass-card rounded-2xl p-5 animate-fade-in-up stagger-3">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/10 flex items-center justify-center">
+<i class="fas fa-chart-bar text-purple-400 text-sm"></i>
+</div>
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Pipeline Performance</h3>
+</div>
+<div id="metricsContainer" class="flex flex-wrap gap-2"></div>
+</div>
+
+<!-- Research Sources -->
+<div id="researchSourcesSection" class="hidden glass-card rounded-2xl p-6 animate-fade-in-up stagger-3">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/10 flex items-center justify-center">
+<i class="fas fa-globe text-amber-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Academic Research Sources</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Real-time web sources consulted during processing</p>
+</div>
+<span id="sourceCount" class="text-xs glass rounded-full px-3 py-1" style="color:var(--text-secondary)">0 sources</span>
+</div>
+<div id="sourcesContainer" class="space-y-2"></div>
+</div>
+
+<!-- Section Comparisons -->
+<section class="glass-card rounded-2xl p-6 animate-fade-in-up stagger-4">
+<div class="flex items-center gap-3 mb-5">
+<div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/10 flex items-center justify-center">
+<i class="fas fa-not-equal text-purple-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Section Comparisons</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Old vs new — word-level diff view</p>
+</div>
+<span id="comparisonCount" class="text-xs glass rounded-full px-3 py-1" style="color:var(--text-secondary)">0 sections</span>
+</div>
+<div id="comparisons" class="space-y-4 comparison-panel scroll-custom"></div>
+</section>
+
+<!-- Updated Notes -->
+<section class="glass-card rounded-2xl p-6 animate-fade-in-up stagger-5">
+<div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-accent-500/10 border border-accent-500/10 flex items-center justify-center">
+<i class="fas fa-file-alt text-accent-400 text-sm"></i>
+</div>
+<div>
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Updated Notes</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Your enhanced document</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button onclick="exportNotes('pdf')" class="export-btn pdf"><i class="fas fa-file-pdf"></i> PDF</button>
+<button onclick="exportNotes('docx')" class="export-btn docx"><i class="fas fa-file-word"></i> DOCX</button>
+</div>
+</div>
+<div id="fullNotesOutput" class="notes-output glass rounded-xl p-4 sm:p-6 max-h-[600px] overflow-y-auto scroll-custom"></div>
+</section>
+
+<!-- Self-Correction Report -->
+<section id="correctionSection" class="hidden glass-card rounded-2xl p-6 animate-fade-in-up stagger-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/10 flex items-center justify-center">
+<i class="fas fa-microchip text-rose-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Self-Correction Report</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Automatic quality and consistency checks applied</p>
+</div>
+</div>
+<div id="correctionContent" class="space-y-3"></div>
+</section>
+
+<!-- Quality Score -->
+<section id="qualitySection" class="hidden glass-card rounded-2xl p-6 animate-fade-in-up stagger-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/10 flex items-center justify-center">
+<i class="fas fa-star text-emerald-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Quality Assessment</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Overall quality score of the generated output</p>
+</div>
+</div>
+<div id="qualityContent" class="flex items-center gap-6 flex-wrap"></div>
+</section>
+
+<!-- Session Timeline -->
+<section id="timelineSection" class="hidden glass-card rounded-2xl p-6 animate-fade-in-up stagger-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/10 flex items-center justify-center">
+<i class="fas fa-timeline text-indigo-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Session Timeline</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Full iteration history across all refinements</p>
+</div>
+</div>
+<div id="timelineContainer" class="space-y-1"></div>
+</section>
+
+<!-- Confidence Score Heatmap -->
+<section id="heatmapSection" class="hidden glass-card rounded-2xl p-6 animate-fade-in-up stagger-4">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/10 flex items-center justify-center">
+<i class="fas fa-fire text-teal-400 text-sm"></i>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Confidence Score Heatmap</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Estimated reliability per section</p>
+</div>
+</div>
+<div id="heatmapContainer" class="space-y-1"></div>
+</section>
+
+<!-- Session Link / Share -->
+<section class="glass-card rounded-2xl p-4 animate-fade-in-up stagger-5">
+<div class="flex items-center justify-between flex-wrap gap-3">
+<div class="flex items-center gap-2">
+<i class="fas fa-share-nodes text-primary-400 text-xs"></i>
+<span class="text-xs" style="color:var(--text-secondary)">Share this session</span>
+</div>
+<div class="flex items-center gap-2">
+<button onclick="generateSessionLink()" class="copy-btn"><i class="fas fa-link text-xs"></i> Copy Session Link</button>
+<button onclick="copyToClipboard(STATE.fullUpdatedNotes,this)" class="copy-btn"><i class="fas fa-copy text-xs"></i> Copy Notes</button>
+</div>
+</div>
+</section>
+
+<!-- Refinement Section -->
+<section class="glass-card rounded-2xl p-6 border-accent-500/10 animate-fade-in-up stagger-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-accent-500/10 border border-accent-500/10 flex items-center justify-center">
+<i class="fas fa-rotate text-accent-400 text-sm"></i>
+</div>
+<div>
+<h3 class="text-sm font-semibold" style="color:var(--text-primary)">Refine Further</h3>
+<p class="text-xs" style="color:var(--text-secondary)">Not satisfied? Send a follow-up prompt</p>
+</div>
+</div>
+<span id="iterationInfo" class="text-xs glass rounded-full px-3 py-1" style="color:var(--text-muted)">Iteration 1</span>
+</div>
+<div class="flex gap-3">
+<div class="flex-1 relative">
+<textarea id="refinementInput" rows="2" class="w-full glass-input rounded-xl p-3 pr-12 text-sm resize-y transition-shadow placeholder:text-slate-600 min-h-[60px]" placeholder="E.g. Make the section on supervised learning more concise..."></textarea>
+<button onclick="runRefinement()" class="absolute bottom-3 right-3 w-8 h-8 rounded-lg btn-accent flex items-center justify-center" title="Send">
+<i class="fas fa-arrow-up text-xs"></i>
+</button>
+</div>
+</div>
+</section>
+</div>
+
+<!-- Footer -->
+<footer class="text-center text-xs py-6 mt-12 border-t animate-fade-in" style="color:var(--text-muted);border-color:var(--border-color)">
+<p>© 2026 <span style="color:var(--text-secondary)">Vermax</span> — AI Agentic RAG Assistant. All rights reserved.</p>
+</footer>
+</main>
+
+<!-- SVG Defs for Gauge -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" stop-color="#f43f5e" />
+<stop offset="50%" stop-color="#f59e0b" />
+<stop offset="100%" stop-color="#22c55e" />
+</linearGradient>
+</defs>
+</svg>
+
+<script>
+// ── State ───────────────────────────────────────────────────────────────
+var STATE={documentId:null,filename:null,sessionId:null,iteration:0,fullUpdatedNotes:'',processedAt:null,researchSources:[],sectionComparisons:[],selfCorrection:null,modelUsed:'',pipelineStartTime:null};
+var API_BASE='https://agent-wiuf.onrender.com';
+var QUOTA_POLL_INTERVAL=null;
+var THEME='dark';
+
+// ── Pipeline Steps Configuration ────────────────────────────────────────
+const PIPELINE_STEPS=[
+  {id:'upload',label:'Upload',icon:'fa-cloud-upload-alt',color:'primary'},
+  {id:'embed',label:'Embed',icon:'fa-vector-square',color:'primary'},
+  {id:'retrieve',label:'Retrieve',icon:'fa-search',color:'primary'},
+  {id:'research',label:'Research',icon:'fa-globe',color:'amber'},
+  {id:'generate',label:'Generate',icon:'fa-wand-magic-sparkles',color:'primary'},
+  {id:'correct',label:'Correct',icon:'fa-microchip',color:'rose'},
+  {id:'compare',label:'Compare',icon:'fa-not-equal',color:'purple'},
+  {id:'complete',label:'Complete',icon:'fa-circle-check',color:'accent'},
+];
+
+// ── DOM Ready ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  checkHealth();checkQuota();setupUpload();setupPromptInput();updateProcessBtn();
+  QUOTA_POLL_INTERVAL=setInterval(checkQuota,30000);
+  setupParticles();initPipeline();
+  // Restore theme
+  var saved=localStorage.getItem('vermax_theme');
+  if(saved)applyTheme(saved);
+});
+
+// ── Theme ───────────────────────────────────────────────────────────────
+function applyTheme(t){
+  THEME=t;
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('themeIcon').className=t==='dark'?'fas fa-moon text-sm':'fas fa-sun text-sm';
+  localStorage.setItem('vermax_theme',t);
+}
+function toggleTheme(){
+  applyTheme(THEME==='dark'?'light':'dark');
+}
+
+// ── Pipeline ────────────────────────────────────────────────────────────
+function initPipeline(){
+  var c=document.getElementById('pipelineContainer');
+  c.innerHTML='';
+  PIPELINE_STEPS.forEach(function(step,i){
+    var connector=i<PIPELINE_STEPS.length-1?'<div class="pipeline-connector" id="pipe_conn_'+i+'"></div>':'';
+    c.innerHTML+='<div class="pipeline-step" id="pipe_step_'+step.id+'" data-step="'+step.id+'">'+
+      '<div class="pipeline-circle"><i class="fas '+step.icon+'"></i></div>'+
+      '<span class="step-label">'+step.label+'</span>'+
+      '<span class="pipeline-duration" id="pipe_dur_'+step.id+'"></span>'+
+    '</div>'+connector;
+  });
+}
+
+function setPipelineStep(stepId,status){
+  var el=document.getElementById('pipe_step_'+stepId);
+  if(!el)return;
+  el.className='pipeline-step '+status;
+  // Update connector before this step
+  var idx=PIPELINE_STEPS.findIndex(function(s){return s.id===stepId;});
+  if(idx>0){
+    var conn=document.getElementById('pipe_conn_'+(idx-1));
+    if(conn)conn.className='pipeline-connector '+(status==='active'||status==='completed'?'completed':'');
+  }
+  // If active, scroll into view
+  if(status==='active')el.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+
+function markPipelineStepDuration(stepId,durationMs){
+  var el=document.getElementById('pipe_dur_'+stepId);
+  if(el)el.textContent=durationMs>=1000?(durationMs/1000).toFixed(1)+'s':durationMs+'ms';
+}
+
+function resetPipeline(){
+  PIPELINE_STEPS.forEach(function(step){
+    setPipelineStep(step.id,'');
+    markPipelineStepDuration(step.id,'');
+  });
+  document.getElementById('pipelineTime').textContent='0.0s elapsed';
+}
+
+function showPipeline(){
+  document.getElementById('pipelineSection').classList.remove('hidden');
+  resetPipeline();
+  STATE.pipelineStartTime=Date.now();
+}
+
+function updatePipelineTime(){
+  if(STATE.pipelineStartTime){
+    var elapsed=(Date.now()-STATE.pipelineStartTime)/1000;
+    document.getElementById('pipelineTime').textContent=elapsed.toFixed(1)+'s elapsed';
+  }
+}
+
+var pipelineTimer=null;
+function startPipelineTimer(){
+  if(pipelineTimer)clearInterval(pipelineTimer);
+  pipelineTimer=setInterval(updatePipelineTime,100);
+}
+function stopPipelineTimer(){
+  if(pipelineTimer){clearInterval(pipelineTimer);pipelineTimer=null;}
+  updatePipelineTime();
+}
+
+// ── Particles Setup ─────────────────────────────────────────────────────
+function setupParticles(){/* particles are in the DOM already - noop */}
+
+// ── Toast System ────────────────────────────────────────────────────────
+function showToast(message,type){
+type=type||'info';
+var container=document.getElementById('toastContainer');
+var icons={success:'fa-circle-check',error:'fa-exclamation-triangle',info:'fa-circle-info'};
+var toast=document.createElement('div');
+toast.className='toast '+type+' pointer-events-auto cursor-pointer flex items-center gap-2.5';
+toast.innerHTML='<i class="fas '+icons[type]+'"></i>'+message;
+container.appendChild(toast);
+setTimeout(function(){if(toast.parentNode)toast.remove();},4000);
+toast.addEventListener('click',function(){toast.remove();});
+}
+
+// ── Health Check ────────────────────────────────────────────────────────
+async function checkHealth(){
+var badge=document.getElementById('healthBadge');
+try{
+var resp=await fetch(API_BASE+'/api/v1/upload/health');
+if(!resp.ok)throw Error('Not OK');
+var data=await resp.json();
+var ok=data.status==='healthy';
+badge.innerHTML='<span class="w-2 h-2 rounded-full '+(ok?'bg-green-500':'bg-yellow-500')+'"></span> '+(ok?'All Systems OK':'Degraded');
+badge.className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass '+(ok?'text-green-400':'text-yellow-400');
+}catch(e){
+badge.innerHTML='<span class="w-2 h-2 rounded-full bg-red-500"></span> Offline';
+badge.className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass text-red-400';
+}}
+
+// ── Quota ───────────────────────────────────────────────────────────────
+async function checkQuota(){
+try{
+var resp=await fetch(API_BASE+'/api/v1/quota/status');
+if(!resp.ok)return;
+var data=await resp.json();
+if(data.exhausted){showQuotaBanner(data.message,data.reset_in_seconds);}else{hideQuotaBanner();}
+}catch(e){}
+}
+
+var quotaCountdownInterval=null;
+var quotaStartTime=0;
+
+function showQuotaBanner(msg,resetInSeconds){
+var banner=document.getElementById('quotaBanner');
+banner.classList.remove('hidden');
+document.getElementById('quotaMsg').textContent=msg;
+document.getElementById('processBtn').disabled=true;
+document.getElementById('sendPromptBtn').disabled=true;
+document.getElementById('healthBadge').innerHTML='<span class="w-2 h-2 rounded-full bg-red-500"></span> Quota Exhausted';
+document.getElementById('healthBadge').className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium glass text-red-400';
+if(quotaCountdownInterval)clearInterval(quotaCountdownInterval);
+quotaStartTime=Date.now()/1000;
+quotaCountdownInterval=setInterval(function(){
+var now=Date.now()/1000;
+var remaining=resetInSeconds-(now-quotaStartTime);
+if(remaining<=0){hideQuotaBanner();return;}
+var cd=document.getElementById('quotaCountdown');
+if(remaining>3600){cd.textContent='Auto-resumes in ~'+Math.round(remaining/3600)+'h '+Math.round((remaining%3600)/60)+'m';}
+else if(remaining>60){cd.textContent='Auto-resumes in ~'+Math.round(remaining/60)+'m '+Math.round(remaining%60)+'s';}
+else{cd.textContent='Auto-resumes in ~'+Math.round(remaining)+'s';}
+},1000);
+}
+
+function hideQuotaBanner(){
+document.getElementById('quotaBanner').classList.add('hidden');
+if(quotaCountdownInterval){clearInterval(quotaCountdownInterval);quotaCountdownInterval=null;}
+updateProcessBtn();
+checkHealth();
+}
+
+// ── Upload ───────────────────────────────────────────────────────────────
+function setupUpload(){
+var dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('click',function(e){if(!e.target.closest('button'))fi.click();});
+fi.addEventListener('change',function(){if(fi.files.length)handleFile(fi.files[0]);});
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drop-zone-active');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('drop-zone-active');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drop-zone-active');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
+}
+
+async function handleFile(file){
+var ext=file.name.split('.').pop().toLowerCase();
+if(!['txt','pdf','docx'].includes(ext)){showToast('Unsupported file type: .'+ext+'. Allowed: TXT, PDF, DOCX.','error');return;}
+if(file.size>50*1024*1024){showToast('File exceeds 50 MB limit.','error');return;}
+document.getElementById('dropContent').classList.add('hidden');
+document.getElementById('uploadProgress').classList.remove('hidden');
+document.getElementById('chatInterface').classList.remove('hidden');
+var fd=new FormData();fd.append('file',file);
+try{
+var resp=await fetch(API_BASE+'/api/v1/upload',{method:'POST',body:fd});
+var data=await resp.json();
+document.getElementById('uploadProgress').classList.add('hidden');
+if(!resp.ok){document.getElementById('dropContent').classList.remove('hidden');showToast(data.detail||'Upload failed.','error');return;}
+STATE.documentId=data.document_id;STATE.filename=data.filename;
+document.getElementById('uploadedFilename').textContent=data.filename;
+document.getElementById('uploadedDocId').textContent='ID: '+data.document_id.slice(0,8)+'...';
+document.getElementById('uploadedFile').classList.remove('hidden');
+document.getElementById('dropContent').classList.add('hidden');
+showToast(data.filename+' uploaded — '+data.total_chunks+' chunks indexed.','success');
+updateProcessBtn();updateStatusBar();updateSteps();
+document.getElementById('welcomeArea').classList.add('hidden');
+}catch(err){
+document.getElementById('uploadProgress').classList.add('hidden');
+document.getElementById('dropContent').classList.remove('hidden');
+showToast('Upload error: '+err.message,'error');
+}}
+
+function resetUpload(){STATE.documentId=null;STATE.filename=null;document.getElementById('uploadedFile').classList.add('hidden');document.getElementById('dropContent').classList.remove('hidden');document.getElementById('fileInput').value='';updateProcessBtn();updateStatusBar();updateSteps();}
+
+function setupPromptInput(){var ta=document.getElementById('promptInput');ta.addEventListener('input',function(){document.getElementById('charCount').textContent=ta.value.length+' / 10,000';updateProcessBtn();});}
+
+function updateProcessBtn(){
+var btn=document.getElementById('processBtn');
+var sendBtn=document.getElementById('sendPromptBtn');
+var ready=STATE.documentId!==null&&document.getElementById('promptInput').value.trim().length>0;
+btn.disabled=!ready;sendBtn.disabled=!ready;
+}
+
+function updateStatusBar(){
+var docEl=document.getElementById('statusDocId'),sessEl=document.getElementById('statusSessionId'),iterEl=document.getElementById('statusIteration');
+if(STATE.documentId){docEl.classList.remove('hidden');docEl.querySelector('span').textContent=STATE.documentId.slice(0,8)+'...';}else{docEl.classList.add('hidden');}
+if(STATE.sessionId){sessEl.classList.remove('hidden');sessEl.querySelector('span').textContent=STATE.sessionId.slice(0,8)+'...';iterEl.classList.remove('hidden');iterEl.querySelector('span').textContent=STATE.iteration;}else{sessEl.classList.add('hidden');iterEl.classList.add('hidden');}
+}
+
+function updateSteps(){
+var steps=document.querySelectorAll('.step-item');
+steps.forEach(function(s,i){
+s.classList.remove('active','completed');
+var stepNum=parseInt(s.dataset.step);
+if(stepNum===1&&STATE.documentId){s.classList.add('completed');}
+else if(stepNum===2&&STATE.sessionId){s.classList.add('completed');}
+else if(stepNum===3&&STATE.fullUpdatedNotes){s.classList.add('completed');}
+if(stepNum===2&&STATE.documentId&&!STATE.sessionId)s.classList.add('active');
+if(stepNum===3&&STATE.sessionId&&!STATE.fullUpdatedNotes)s.classList.add('active');
+if(stepNum===4&&STATE.fullUpdatedNotes)s.classList.add('active');
+});
+}
+
+// ── Agentic RAG ─────────────────────────────────────────────────────────
+async function runAgenticRag(){
+var prompt=document.getElementById('promptInput').value.trim();
+var topK=parseInt(document.getElementById('topKSelect').value);
+if(!STATE.documentId){showToast('Please upload a document first.','error');return;}
+if(!prompt){showToast('Please enter an update request.','error');return;}
+
+// Show pipeline visualization
+showPipeline();
+startPipelineTimer();
+setPipelineStep('upload','completed');
+setPipelineStep('embed','active');
+hideError();
+
+var body={prompt:prompt,document_id:STATE.documentId,top_k:topK,max_research_sources:5};
+if(STATE.sessionId)body.session_id=STATE.sessionId;
+
+var stepTimings={};
+var stepStart=Date.now();
+
+try{
+// Simulate embed/retrieve progress
+setTimeout(function(){
+  setPipelineStep('embed','completed');
+  markPipelineStepDuration('embed',Date.now()-stepStart);
+  setPipelineStep('retrieve','completed');
+  stepStart=Date.now();
+  setPipelineStep('research','active');
+},500);
+
+showLoading('Retrieving relevant chunks from vector store...');
+stepStart=Date.now();
+
+var resp=await fetch(API_BASE+'/api/v1/agentic-rag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+
+// Research done
+setPipelineStep('research','completed');
+stepStart=Date.now();
+setPipelineStep('generate','active');
+showLoading('Generating updated content via LLM...');
+
+var data=await resp.json();
+
+// Generation done
+setPipelineStep('generate','completed');
+markPipelineStepDuration('research',Date.now()-stepStart);
+stepStart=Date.now();
+setPipelineStep('correct','active');
+
+// Apply corrections
+setTimeout(function(){
+  setPipelineStep('correct','completed');
+  stepStart=Date.now();
+  setPipelineStep('compare','active');
+},300);
+
+hideLoading();
+stopPipelineTimer();
+setPipelineStep('compare','completed');
+
+if(!resp.ok){
+  setPipelineStep('complete','failed');
+  if(resp.status===429&&data.quota_exhausted){showQuotaBanner(data.message,data.retry_after_seconds);return;}
+  showToast(data.detail||'Processing failed.','error');
+  return;
+}
+
+setPipelineStep('complete','completed');
+STATE.sessionId=data.session_id;STATE.iteration=data.iteration_number;
+STATE.fullUpdatedNotes=data.full_updated_notes;STATE.processedAt=data.processed_at;
+STATE.researchSources=data.research_sources||[];STATE.sectionComparisons=data.section_comparisons||[];
+STATE.selfCorrection=data.self_correction||{};STATE.modelUsed=data.model_used;
+STATE.documentId=data.document_id;STATE.filename=data.filename;
+
+renderOutput(data);updateStatusBar();updateProcessBtn();updateSteps();scrollToOutput();
+if(STATE.filename){document.getElementById('uploadedFilename').textContent=data.filename;document.getElementById('uploadedDocId').textContent='ID: '+data.document_id.slice(0,8)+'...';}
+showToast('Update complete!','success');
+}catch(err){hideLoading();stopPipelineTimer();setPipelineStep('complete','failed');showToast('Network error: '+err.message,'error');}
+}
+
+async function runRefinement(){
+var input=document.getElementById('refinementInput');
+var text=input.value.trim();
+if(!text){showToast('Please enter a refinement request.','error');return;}
+if(!STATE.sessionId){showToast('No active session.','error');return;}
+document.getElementById('promptInput').value=text;
+document.getElementById('charCount').textContent=text.length+' / 10,000';
+await runAgenticRag();
+input.value='';
+}
+
+// ── Presenter Mode ─────────────────────────────────────────────────────
+function togglePresenterMode(){
+  document.body.classList.toggle('presenter-mode');
+  var btn=document.getElementById('presenterBtn');
+  var icon=btn.querySelector('i');
+  if(document.body.classList.contains('presenter-mode')){
+    icon.className='fas fa-compress';
+    btn.title='Exit Presenter Mode';
+    showToast('Presenter mode: active','info');
+  }else{
+    icon.className='fas fa-desktop';
+    btn.title='Presenter Mode (Full Screen)';
+  }
+}
+
+// ── Copy to Clipboard ──────────────────────────────────────────────────
+function copyToClipboard(text,btn){
+  navigator.clipboard.writeText(text).then(function(){
+    btn.className='copy-btn copied';
+    btn.innerHTML='<i class="fas fa-check text-xs"></i> Copied!';
+    setTimeout(function(){
+      btn.className='copy-btn';
+      btn.innerHTML='<i class="fas fa-copy text-xs"></i> Copy';
+    },2000);
+  }).catch(function(){
+    showToast('Failed to copy to clipboard','error');
+  });
+}
+
+// ── Session Timeline ───────────────────────────────────────────────────
+function renderSessionTimeline(sessionHistory){
+  if(!sessionHistory||!sessionHistory.length){
+    document.getElementById('timelineSection').classList.add('hidden');
+    return;
+  }
+  document.getElementById('timelineSection').classList.remove('hidden');
+  var c=document.getElementById('timelineContainer');
+  c.innerHTML='';
+  sessionHistory.forEach(function(entry,i){
+    var isLast=i===sessionHistory.length-1;
+    var div=document.createElement('div');
+    div.className='timeline-item'+(isLast?' active':' completed');
+    div.innerHTML=
+      '<div class="flex items-center justify-between cursor-pointer" onclick="toggleTimelineItem(this)">'+
+        '<div>'+
+          '<span class="text-sm font-semibold" style="color:var(--text-primary)">Iteration '+(i+1)+'</span>'+
+          '<p class="text-xs truncate max-w-xs" style="color:var(--text-secondary)">'+esc(entry.prompt||'')+'</p>'+
+        '</div>'+
+        '<div class="flex items-center gap-2 text-xs" style="color:var(--text-muted)">'+
+          '<span>'+entry.sources_count+' sources</span>'+
+          '<span>'+(entry.corrections?entry.corrections.length:0)+' corrections</span>'+
+          '<i class="fas fa-chevron-down text-xs transition-transform duration-300"></i>'+
+        '</div>'+
+      '</div>'+
+      '<div class="timeline-body mt-2">'+
+        '<div class="glass rounded-xl p-3 mt-2">'+
+          '<p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--text-muted)">Prompt</p>'+
+          '<p class="text-sm mb-2" style="color:var(--text-secondary)">'+esc(entry.prompt)+'</p>'+
+          '<p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--text-muted)">Response Preview</p>'+
+          '<p class="text-sm" style="color:var(--text-secondary)">'+esc(entry.response_preview)+'</p>'+
+          (entry.corrections&&entry.corrections.length?'<div class="mt-2 flex flex-wrap gap-1">'+entry.corrections.map(function(c){return '<span class="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full">'+esc(c.substring(0,50))+'</span>';}).join('')+'</div>':'')+
+        '</div>'+
+      '</div>';
+    c.appendChild(div);
+  });
+}
+
+function toggleTimelineItem(header){
+  var item=header.closest('.timeline-item');
+  if(!item)return;
+  item.classList.toggle('expanded');
+  var icon=header.querySelector('.fa-chevron-down');
+  if(icon)icon.style.transform=item.classList.contains('expanded')?'rotate(180deg)':'rotate(0deg)';
+}
+
+// ── Confidence Score Heatmap ───────────────────────────────────────────
+function renderConfidenceHeatmap(comparisons,qualityScore){
+  if(!comparisons||!comparisons.length){
+    document.getElementById('heatmapSection').classList.add('hidden');
+    return;
+  }
+  document.getElementById('heatmapSection').classList.remove('hidden');
+  var c=document.getElementById('heatmapContainer');
+  c.innerHTML='';
+  comparisons.forEach(function(comp,idx){
+    var confidence='high';
+    if(comp.original_text==='(New section — not in original notes)'){
+      confidence='medium';
+    }else{
+      var changes=comp.changes_summary||'';
+      if(changes.includes('expanded')||changes.includes('New')||changes.includes('condensed'))confidence='medium';
+    }
+    if(qualityScore!==null&&qualityScore!==undefined){
+      if(qualityScore<0.6)confidence='low';
+      else if(qualityScore<0.8&&confidence==='high')confidence='medium';
+    }
+    var heatDiv=document.createElement('div');
+    heatDiv.className='flex items-center gap-2.5 py-1.5';
+    heatDiv.innerHTML=
+      '<span class="confidence-dot '+confidence+'"></span>'+
+      '<div class="confidence-bar '+confidence+'"></div>'+
+      '<span class="text-xs truncate" style="color:var(--text-secondary);max-width:180px">'+esc(comp.section_title)+'</span>'+
+      '<span class="text-2xs uppercase font-semibold" style="color:var(--text-muted)">'+confidence+'</span>';
+    c.appendChild(heatDiv);
+  });
+}
+
+// ── Token Cost Calculator ──────────────────────────────────────────────
+function renderCostBadge(data){
+  var container=document.getElementById('metricsContainer');
+  if(data.prompt_tokens!==undefined){
+    var costStr='$'+data.estimated_cost_usd.toFixed(6);
+    if(data.estimated_cost_usd<0.001)costStr='<'+'$0.001';
+    container.innerHTML+='<div class="metric-badge"><i class="fas fa-coins"></i> Cost: '+costStr+'</div>';
+    container.innerHTML+='<div class="metric-badge"><i class="fas fa-file-lines"></i> Tokens: '+(data.prompt_tokens+data.completion_tokens)+' ('+data.prompt_tokens+'↑ '+data.completion_tokens+'↓)</div>';
+  }
+}
+
+// ── Shareable Session Link ──────────────────────────────────────────────
+function generateSessionLink(){
+  if(!STATE.sessionId){showToast('No active session to share.','error');return;}
+  var url=window.location.href.split('?')[0]+'?session='+STATE.sessionId;
+  navigator.clipboard.writeText(url).then(function(){
+    showToast('Session link copied to clipboard!','success');
+  }).catch(function(){
+    showToast('Failed to copy link','error');
+  });
+}
+
+function loadSessionFromUrl(){
+  var params=new URLSearchParams(window.location.search);
+  var sessionId=params.get('session');
+  if(sessionId){
+    showToast('Session loaded: '+sessionId.slice(0,8)+'...','info');
+    STATE.sessionId=sessionId;
+    updateStatusBar();
+  }
+}
+
+// ── Export ──────────────────────────────────────────────────────────────
+async function exportNotes(format){
+var text=STATE.fullUpdatedNotes;
+if(!text){showToast('No notes to export.','error');return;}
+var title=STATE.filename?STATE.filename.replace(/\.[^/.]+$/,''):'Updated Notes';
+var endpoint=format==='pdf'?'/api/v1/export/pdf':'/api/v1/export/docx';
+var ext=format==='pdf'?'pdf':'docx';
+try{
+var resp=await fetch(API_BASE+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({markdown_text:text,title:title,document_id:STATE.documentId})});
+if(!resp.ok){var err=await resp.json().catch(function(){return{};});showToast(err.detail||format.toUpperCase()+' export failed.','error');return;}
+var blob=await resp.blob();
+var url=URL.createObjectURL(blob);
+var a=document.createElement('a');a.href=url;a.download=title+'.'+ext;
+document.body.appendChild(a);a.click();document.body.removeChild(a);
+URL.revokeObjectURL(url);
+showToast(format.toUpperCase()+' downloaded successfully.','success');
+}catch(err){showToast('Export error: '+err.message,'error');}
+}
+
+// ── Render Output ───────────────────────────────────────────────────────
+function renderOutput(data){
+var out=document.getElementById('outputSection');
+out.classList.remove('hidden');
+out.scrollIntoView({behavior:'smooth',block:'start'});
+var msg=document.getElementById('resultMessage');
+msg.querySelector('span').textContent=data.message;
+msg.classList.remove('hidden');
+
+// Show presenter button
+document.getElementById('presenterBtn').classList.remove('hidden');
+
+// Research sources
+renderResearchSources(data.research_sources||[]);
+
+// Comparisons (word-level diff)
+renderComparisons(data.section_comparisons||[]);
+
+// Updated notes with copy buttons
+renderMarkdown('fullNotesOutput',data.full_updated_notes);
+
+// Self-correction report
+renderSelfCorrection(data.self_correction||null);
+
+// Quality score
+renderQualityScore(data.self_correction||null);
+
+// Pipeline metrics + cost
+renderPipelineMetrics(data);
+
+// Session timeline
+renderSessionTimeline(data.session_history||[]);
+
+// Confidence heatmap
+renderConfidenceHeatmap(data.section_comparisons||[],data.self_correction?data.self_correction.quality_score:null);
+
+// Cost badge
+renderCostBadge(data);
+
+document.getElementById('iterationInfo').textContent='Iteration '+data.iteration_number;
+window.scrollTo({top:out.offsetTop-100,behavior:'smooth'});
+}
+
+// ── Word-Level Diff ─────────────────────────────────────────────────────
+function computeWordDiff(original,updated){
+  // Simple word-level diff using LCS
+  var oWords=tokenizeWords(original);
+  var uWords=tokenizeWords(updated);
+  
+  // Build LCS table
+  var m=oWords.length,n=uWords.length;
+  var dp=Array(m+1).fill(null).map(function(){return Array(n+1).fill(0);});
+  for(var i=1;i<=m;i++){
+    for(var j=1;j<=n;j++){
+      if(oWords[i-1].text===uWords[j-1].text){
+        dp[i][j]=dp[i-1][j-1]+1;
+      }else{
+        dp[i][j]=Math.max(dp[i-1][j],dp[i][j-1]);
+      }
+    }
+  }
+  
+  // Backtrack to find diff
+  var result=[];
+  var i=m,j=n;
+  while(i>0||j>0){
+    if(i>0&&j>0&&oWords[i-1].text===uWords[j-1].text){
+      result.unshift({type:'same',text:oWords[i-1].text,raw:oWords[i-1].raw});
+      i--;j--;
+    }else if(j>0&&(i===0||dp[i][j-1]>=dp[i-1][j])){
+      result.unshift({type:'added',text:uWords[j-1].text,raw:uWords[j-1].raw});
+      j--;
+    }else{
+      result.unshift({type:'removed',text:oWords[i-1].text,raw:oWords[i-1].raw});
+      i--;
+    }
+  }
+  
+  return result;
+}
+
+function tokenizeWords(text){
+  var tokens=[];
+  var regex=/(\s+|[a-zA-Z0-9]+(?:[.'-][a-zA-Z0-9]+)*|[^\w\s])/g;
+  var match;
+  while((match=regex.exec(text))!==null){
+    tokens.push({text:match[0].toLowerCase(),raw:match[0]});
+  }
+  return tokens;
+}
+
+function renderDiffHtml(original,updated){
+  var diff=computeWordDiff(original||'',updated||'');
+  var oCount=0,uCount=0;
+  var added=0,removed=0;
+  
+  var html='<div class="diff-stats">';
+  
+  diff.forEach(function(d){
+    if(d.type==='added')added+=d.raw.length;
+    if(d.type==='removed')removed+=d.raw.length;
+    if(d.type==='same'){oCount++;uCount++;}
+    if(d.type==='added')uCount++;
+    if(d.type==='removed')oCount++;
+  });
+  
+  if(added>0)html+='<span class="diff-stat added"><i class="fas fa-plus-circle text-xs"></i> +'+added+' chars</span>';
+  if(removed>0)html+='<span class="diff-stat removed"><i class="fas fa-minus-circle text-xs"></i> -'+removed+' chars</span>';
+  html+='<span class="diff-stat neutral"><i class="fas fa-equals text-xs"></i> '+Math.round((1-Math.min(added+removed,((original||'').length+(updated||'').length))/(Math.max((original||'').length+(updated||'').length,1)))*100)+'% match</span>';
+  html+='</div>';
+  
+  html+='<div class="glass rounded-xl p-3 max-h-64 overflow-y-auto scroll-custom">';
+  diff.forEach(function(d){
+    if(d.type==='same'){
+      html+='<span>'+esc(d.raw)+'</span>';
+    }else if(d.type==='added'){
+      html+='<span class="diff-word added">'+esc(d.raw)+'</span>';
+    }else if(d.type==='removed'){
+      html+='<span class="diff-word removed">'+esc(d.raw)+'</span>';
+    }
+  });
+  html+='</div>';
+  return html;
+}
+
+// ── Section Comparisons ─────────────────────────────────────────────────
+function renderComparisons(comparisons){
+var c=document.getElementById('comparisons');
+document.getElementById('comparisonCount').textContent=comparisons.length+' section(s)';
+c.innerHTML='';
+if(!comparisons.length){c.innerHTML='<p class="text-sm text-center py-8" style="color:var(--text-secondary)">No comparisons available.</p>';return;}
+comparisons.forEach(function(comp,idx){
+var div=document.createElement('div');
+div.className='comparison-card glass rounded-xl overflow-hidden';
+div.style.animationDelay=(idx*0.08)+'s';
+var isNew=comp.original_text==='(New section — not in original notes)';
+var titleHTML='<div class="flex items-center gap-2.5"><span class="w-7 h-7 rounded-lg bg-primary-500/10 text-primary-400 flex items-center justify-center text-xs font-bold">'+(idx+1)+'</span><span class="text-base font-semibold" style="color:var(--text-primary)">'+esc(comp.section_title)+'</span></div>';
+var stateLabel=isNew?'<span class="text-xs text-accent-400 bg-accent-500/10 px-2.5 py-0.5 rounded-full border border-accent-500/10 flex items-center gap-1.5"><i class="fas fa-plus text-2xs"></i> New Section</span>':'<span class="text-xs text-primary-400 bg-primary-500/10 px-2.5 py-0.5 rounded-full border border-primary-500/10 flex items-center gap-1.5"><i class="fas fa-pen text-2xs"></i> Updated</span>';
+
+var diffHtml='';
+if(!isNew){
+  diffHtml=renderDiffHtml(comp.original_text,comp.updated_text);
+}else{
+  diffHtml='<div class="notes-output p-4">'+renderSimpleMarkdown(comp.updated_text)+'</div>';
+}
+
+var changesBlock='<div class="px-5 py-3 border-t" style="border-color:var(--border-color)"><div class="flex items-start gap-2.5 text-sm" style="color:var(--text-secondary)"><i class="fas fa-exchange-alt text-primary-400/60 mt-0.5 text-xs flex-shrink-0"></i><span>'+esc(comp.changes_summary)+'</span></div></div>';
+
+div.innerHTML='<div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:var(--border-color)">'+titleHTML+stateLabel+'</div><div class="p-4">'+diffHtml+'</div>'+changesBlock;
+c.appendChild(div);
+});
+}
+
+// ── Research Sources ────────────────────────────────────────────────────
+function renderResearchSources(sources){
+if(!sources||!sources.length){document.getElementById('researchSourcesSection').classList.add('hidden');return;}
+document.getElementById('researchSourcesSection').classList.remove('hidden');
+document.getElementById('sourceCount').textContent=sources.length+' source(s)';
+var c=document.getElementById('sourcesContainer');
+c.innerHTML='';
+sources.forEach(function(src,idx){
+  var url=src.url||'';
+  var domain='';
+  try{domain=new URL(url).hostname.replace('www.','');}catch(e){domain=url;}
+  var badgeClass='generic';
+  if(domain.includes('.edu'))badgeClass='edu';
+  else if(domain.includes('arxiv'))badgeClass='arxiv';
+  else if(domain.includes('wikipedia'))badgeClass='wikipedia';
+  else if(domain.includes('scholar')||domain.includes('semantic')||domain.includes('nature')||domain.includes('science')||domain.includes('springer')||domain.includes('ieee')||domain.includes('acm'))badgeClass='academic';
+  
+  var div=document.createElement('div');
+  div.className='source-card';
+  div.innerHTML=
+    '<div class="source-card-header" onclick="toggleSourceCard(this)">'+
+      '<div class="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">'+
+        '<i class="fas fa-file-lines text-xs text-primary-400"></i>'+
+      '</div>'+
+      '<div class="flex-1 min-w-0">'+
+        '<p class="text-sm font-medium truncate" style="color:var(--text-primary)">'+esc(src.title)+'</p>'+
+        '<p class="text-xs truncate" style="color:var(--text-secondary)">'+esc(domain)+'</p>'+
+      '</div>'+
+      '<span class="source-badge '+badgeClass+'">'+badgeClass.substring(0,4)+'</span>'+
+      '<span class="text-xs font-medium" style="color:var(--text-secondary)">'+(src.relevance_score*100).toFixed(0)+'%</span>'+
+      '<i class="fas fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>'+
+    '</div>'+
+    '<div class="source-card-body">'+
+      '<p class="text-sm leading-relaxed" style="color:var(--text-secondary)">'+esc(src.snippet)+'</p>'+
+      '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 mt-2 text-xs text-primary-400 hover:text-primary-300 transition-colors">'+
+        '<i class="fas fa-external-link-alt text-xs"></i> Open source'+
+      '</a>'+
+    '</div>';
+  c.appendChild(div);
+});
+}
+
+function toggleSourceCard(header){
+var card=header.parentElement;
+card.classList.toggle('expanded');
+var icon=header.querySelector('.fa-chevron-down');
+if(icon)icon.style.transform=card.classList.contains('expanded')?'rotate(180deg)':'rotate(0deg)';
+}
+
+// ── Self-Correction Report ──────────────────────────────────────────────
+function renderSelfCorrection(correction){
+if(!correction||!correction.corrections_applied||!correction.corrections_applied.length){
+  document.getElementById('correctionSection').classList.add('hidden');
+  return;
+}
+document.getElementById('correctionSection').classList.remove('hidden');
+var c=document.getElementById('correctionContent');
+c.innerHTML='';
+
+if(correction.corrections_applied&&correction.corrections_applied.length){
+  var div=document.createElement('div');
+  div.className='glass rounded-xl p-4';
+  div.innerHTML='<p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Corrections Applied</p>';
+  correction.corrections_applied.forEach(function(corr,idx){
+    div.innerHTML+='<div class="flex items-start gap-2 py-1.5"><span class="w-5 h-5 rounded-full bg-rose-500/10 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-wrench text-2xs text-rose-400"></i></span><span class="text-sm" style="color:var(--text-secondary)">'+esc(corr)+'</span></div>';
+  });
+  c.appendChild(div);
+}
+
+var stats=document.createElement('div');
+stats.className='flex flex-wrap gap-3';
+if(correction.length_original_sentences!==null){
+  stats.innerHTML+='<div class="metric-badge"><i class="fas fa-text-width"></i> Original: '+correction.length_original_sentences+' sentences</div>';
+}
+if(correction.length_updated_sentences!==null){
+  stats.innerHTML+='<div class="metric-badge"><i class="fas fa-text-height"></i> Updated: '+correction.length_updated_sentences+' sentences</div>';
+}
+if(correction.research_sources_found!==undefined){
+  stats.innerHTML+='<div class="metric-badge"><i class="fas fa-globe"></i> Sources: '+correction.research_sources_found+'</div>';
+}
+c.appendChild(stats);
+}
+
+// ── Quality Score Gauge ─────────────────────────────────────────────────
+function renderQualityScore(correction){
+if(!correction||correction.quality_score===null||correction.quality_score===undefined){
+  document.getElementById('qualitySection').classList.add('hidden');
+  return;
+}
+document.getElementById('qualitySection').classList.remove('hidden');
+var c=document.getElementById('qualityContent');
+var score=correction.quality_score;
+var circumference=2*Math.PI*54;
+var dasharray=circumference*score;
+
+c.innerHTML=
+  '<div class="gauge-container">'+
+    '<svg width="100" height="100" viewBox="0 0 120 120">'+
+      '<circle class="gauge-bg" cx="60" cy="60" r="54"/>'+
+      '<circle class="gauge-fill" cx="60" cy="60" r="54" stroke-dasharray="'+dasharray+' '+circumference+'" transform="rotate(-90 60 60)"/>'+
+    '</svg>'+
+    '<div class="gauge-text">'+
+      '<div class="gauge-value">'+(score*100).toFixed(0)+'</div>'+
+      '<div class="gauge-label">out of 100</div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="flex-1">'+
+    '<div class="flex items-center gap-2 mb-2">'+
+      getQualityLabel(score)+
+    '</div>'+
+    '<p class="text-xs" style="color:var(--text-secondary)">'+
+      'The quality score evaluates: content completeness, research coverage, '+
+      'and correction efficiency. Score of '+(score*100).toFixed(0)+' indicates '+
+      (score>=0.8?'excellent':score>=0.6?'good':score>=0.4?'acceptable':'needs improvement')+
+      ' output quality.'+
+    '</p>'+
+  '</div>';
+}
+
+function getQualityLabel(score){
+if(score>=0.9)return '<span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20"><i class="fas fa-star mr-1"></i> Excellent</span>';
+if(score>=0.75)return '<span class="text-xs font-semibold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20"><i class="fas fa-check mr-1"></i> Good</span>';
+if(score>=0.6)return '<span class="text-xs font-semibold text-yellow-400 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20"><i class="fas fa-exclamation mr-1"></i> Acceptable</span>';
+if(score>=0.4)return '<span class="text-xs font-semibold text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20"><i class="fas fa-triangle-exclamation mr-1"></i> Needs Work</span>';
+return '<span class="text-xs font-semibold text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20"><i class="fas fa-circle-xmark mr-1"></i> Poor</span>';
+}
+
+// ── Pipeline Metrics ────────────────────────────────────────────────────
+function renderPipelineMetrics(data){
+var c=document.getElementById('metricsContainer');
+c.innerHTML='';
+c.innerHTML+='<div class="metric-badge"><i class="fas fa-brain"></i> Model: '+esc(data.model_used||'N/A')+'</div>';
+c.innerHTML+='<div class="metric-badge"><i class="fas fa-layer-group"></i> Iteration: '+data.iteration_number+'</div>';
+if(data.research_sources)c.innerHTML+='<div class="metric-badge"><i class="fas fa-globe"></i> Sources: '+data.research_sources.length+'</div>';
+if(data.section_comparisons)c.innerHTML+='<div class="metric-badge"><i class="fas fa-not-equal"></i> Comparisons: '+data.section_comparisons.length+'</div>';
+if(data.self_correction&&data.self_correction.quality_score!==null)c.innerHTML+='<div class="metric-badge"><i class="fas fa-star"></i> Quality: '+(data.self_correction.quality_score*100).toFixed(0)+'%</div>';
+if(data.self_correction&&data.self_correction.corrections_applied)c.innerHTML+='<div class="metric-badge"><i class="fas fa-wrench"></i> Corrections: '+data.self_correction.corrections_applied.length+'</div>';
+document.getElementById('pipelineSummary').classList.remove('hidden');
+}
+
+// ── Markdown Rendering (unchanged but enhanced) ─────────────────────────
+function renderSimpleMarkdown(md){
+  if(!md)return '';
+  var html=esc(md);
+  html=html.replace(/^######\s+(.+)$/gm,'<h6>$1</h6>')
+    .replace(/^#####\s+(.+)$/gm,'<h5>$1</h5>')
+    .replace(/^####\s+(.+)$/gm,'<h4>$1</h4>')
+    .replace(/^###\s+(.+)$/gm,'<h3>$1</h3>')
+    .replace(/^##\s+(.+)$/gm,'<h2>$1</h2>')
+    .replace(/^#\s+(.+)$/gm,'<h1>$1</h1>')
+    .replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code class="language-$1">$2</code></pre>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/__(.+?)__/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/_(.+?)_/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  if(!html.match(/^<(h[1-6]|pre|ul|ol|blockquote|hr|table)/)){html='<p>'+html+'</p>';}
+  return html;
+}
+
+function renderMarkdown(containerId,md){
+var container=document.getElementById(containerId);
+if(!md){container.innerHTML='<p class="text-center py-8" style="color:var(--text-muted);font-style:italic">No content generated.</p>';return;}
+var html=md.replace(/^>\s+(.+)$/gm,'<blockquote>$1</blockquote>');
+html=html.replace(/<blockquote>/g,'\x00BQ\x00').replace(/<\/blockquote>/g,'\x00BQe\x00');
+html=esc(html);
+html=html.replace(/\x00BQ\x00/g,'<blockquote>').replace(/\x00BQe\x00/g,'</blockquote>');
+html=html.replace(/^---$/gm,'<hr>').replace(/^######\s+(.+)$/gm,'<h6>$1</h6>').replace(/^#####\s+(.+)$/gm,'<h5>$1</h5>').replace(/^####\s+(.+)$/gm,'<h4>$1</h4>').replace(/^###\s+(.+)$/gm,'<h3>$1</h3>').replace(/^##\s+(.+)$/gm,'<h2>$1</h2>').replace(/^#\s+(.+)$/gm,'<h1>$1</h1>').replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code class="language-$1">$2</code></pre>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/__(.+?)__/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/_(.+?)_/g,'<em>$1</em>').replace(/~~(.+?)~~/g,'<del>$1</del>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^(\s*)[-*+]\s+(.+)$/gm,'<li>$2</li>').replace(/^(\s*)\d+[.)]\s+(.+)$/gm,'<li>$2</li>').replace(/((?:<li>.*<\/li>\n?)+)/g,function(m){return '<ul>\n'+m.trim()+'\n</ul>';}).replace(/\n\n/g,'</p><p>').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:text-primary-300 underline-offset-2 hover:underline">$1</a>');
+if(!html.match(/^<(h[1-6]|pre|ul|ol|blockquote|hr|table)/)){html='<p>'+html+'</p>';}
+container.innerHTML=html;
+container.querySelectorAll('pre code').forEach(function(block){try{hljs.highlightElement(block);}catch(e){}});
+}
+
+// ── UI Helpers ──────────────────────────────────────────────────────────
+function showLoading(t){
+document.getElementById('loadingBar').classList.remove('hidden');
+document.getElementById('loadingText').textContent=t||'Processing...';
+document.getElementById('loadingSubtext').textContent='Agentic pipeline in progress';
+document.getElementById('processBtn').disabled=true;
+document.getElementById('sendPromptBtn').disabled=true;
+}
+function hideLoading(){
+document.getElementById('loadingBar').classList.add('hidden');
+document.getElementById('processBtn').disabled=false;
+document.getElementById('sendPromptBtn').disabled=false;
+}
+function showError(msg){var el=document.getElementById('errorAlert');document.getElementById('errorText').textContent=msg;el.classList.remove('hidden');el.scrollIntoView({behavior:'smooth',block:'center'});}
+function hideError(){document.getElementById('errorAlert').classList.add('hidden');}
+function scrollToOutput(){var el=document.getElementById('outputSection');if(el)setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'start'});},100);}
+function esc(t){if(!t)return '';var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+// ── Keyboard Shortcuts ──────────────────────────────────────────────────
+document.addEventListener('keydown',function(e){
+if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){
+var active=document.activeElement;
+if(active&&['promptInput','refinementInput'].includes(active.id)){e.preventDefault();if(active.id==='refinementInput')runRefinement();else runAgenticRag();}
+}});
+</script>
+</body>
+</html>

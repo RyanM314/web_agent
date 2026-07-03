@@ -1,0 +1,27 @@
+# Web Framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+
+# Document Parsing
+pypdf==5.1.0
+python-docx==1.1.2
+chardet==5.2.0
+
+# AI / Embeddings
+google-genai==2.9.0
+
+# Vector Database
+pinecone==6.0.2
+
+# Web Research (FR3)
+duckduckgo-search==6.3.0
+
+# Utilities
+pydantic>=2.12.5
+pydantic-settings>=2.6.1
+python-dotenv==1.0.1
+aiofiles==24.1.0
+httpx>=0.28.1
+tenacity==9.0.0
+fpdf2>=2.0.0
